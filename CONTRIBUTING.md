@@ -1,24 +1,28 @@
-# Contributing to agent-restaking-avs
+# Contributing to Agent Restaking AVS
 
-We welcome contributions to strengthen zero-trust security for autonomous agent swarms!
+Thank you for contributing to the Agent Restaking AVS Protocol.
 
 ## Development Setup
 
 ```bash
 git clone https://github.com/devsoniclk/agent-restaking-avs.git
 cd agent-restaking-avs
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
 ## Running Tests
 
+We mandate 100% test passing and >95% code coverage for all PRs:
+
 ```bash
-pytest tests/ -v --cov=agent_restaking_avs
+pytest -v --cov=agent_restaking_avs --cov-report=term-missing
 ```
 
 ## Pull Request Guidelines
 
-1. Ensure 100% test pass rate with coverage >= 85%.
-2. Add unit tests for every new caveat predicate or firewall rule.
-3. Verify that token cryptographic verification remains monotonic and non-replayable.
-4. Keep dependencies minimal and audit against CVSS threat vectors.
+1. Ensure all tests pass.
+2. Add comprehensive unit and integration tests for any new features.
+3. Adhere to strict type annotations (`mypy`).
+4. Follow conventional commit messages.

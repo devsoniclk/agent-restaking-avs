@@ -1,93 +1,72 @@
+#!/usr/bin/env python3
 """
-Performance benchmarks for the Agent Restaking AVS protocol.
-Evaluates dual-quorum consensus throughput, DID credential verification latency,
-and deterministic slashing waterfall throughput.
+Performance benchmarks for Agent Restaking AVS cryptographic operations and quorum verification.
 """
 
-import sys
 import time
-from pathlib import Path
-
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-from agent_restaking_avs.identity import IdentityManager
-from agent_restaking_avs.models import DisputeType, StakePoolConfig
-from agent_restaking_avs.staking import StakingManager
-from agent_restaking_avs.waterfall import SlashingWaterfallEngine
+from agent_restaking_avs import (
+    CrossChainPacket,
+    CrossChainRelayEngine,
+    IdentityManager,
+    StakePoolConfig,
+    StakingManager,
+)
 
 
-def benchmark_consensus_verification():
-    staking = StakingManager()
-    op_ids = []
+def benchmark_credential_issuance_and_verification(n_iterations: int = 1000) -> None:
+    claims = {
+        "tee_type": "INTEL_TDX",
+        "measurement_digest": "0x123456789abcdef",
+        "model_weight_digest": "sha256:fedcba987654321",
+    }
+    secret = "benchmark_secret_key_long_entropy_string"
+
+    start = time.perf_counter()
+    for i in range(n_iterations):
+        vc = IdentityManager.issue_credential(
+            issuer_did="did:agent:avs:benchmark",
+            subject_did=f"did:agent:eth:0x{i:040x}",
+            claims=claims,
+            secret_key=secret,
+            ttl_seconds=3600.0,
+        )
+        is_valid, _ = IdentityManager.verify_credential(vc, secret)
+        assert is_valid is True
+    duration = time.perf_counter() - start
+    ops_per_sec = n_iterations / duration
+    print(f"Credential Issue & Verify: {n_iterations} iterations in {duration:.4f}s ({ops_per_sec:,.1f} ops/sec)")
+
+
+def benchmark_dual_quorum_verification(n_iterations: int = 1000) -> None:
+    staking = StakingManager(StakePoolConfig())
+    # Register 100 operators
     for i in range(100):
-        op_id = f"op-{i}"
         staking.register_operator(
-            operator_id=op_id,
+            operator_id=f"op-{i}",
             did=f"did:agent:eth:0x{i:040x}",
             public_key=f"0xpub{i}",
-            native_stake=10000.0,
-            restaked_eth=10.0,
+            native_stake=10000.0 + (i * 100),
+            restaked_eth=10.0 + (i * 0.5),
         )
-        op_ids.append(op_id)
 
-    # Benchmark verifying consensus across 75 signers
-    signers = op_ids[:75]
-    iterations = 10_000
+    # 70 operators sign (sufficient for 66.67% supermajority)
+    signers = [f"op-{i}" for i in range(30, 100)]
+
     start = time.perf_counter()
-    for _ in range(iterations):
-        staking.verify_dual_quorum(signers)
-    elapsed = time.perf_counter() - start
-
-    rate = iterations / elapsed
-    latency_us = (elapsed / iterations) * 1_000_000
-    print(f"Dual-Quorum Consensus (100 Operators, 75 Signers): {rate:,.0f} ops/sec ({latency_us:.2f} µs/op)")
-
-
-def benchmark_credential_verification():
-    secret = "benchmark-secret-key"
-    vc = IdentityManager.issue_credential(
-        issuer_did="did:agent:eth:0xissuer",
-        subject_did="did:agent:eth:0xsubject",
-        claims={"tee_type": "INTEL_TDX", "digest": "0x123"},
-        secret_key=secret,
-    )
-
-    iterations = 20_000
-    start = time.perf_counter()
-    for _ in range(iterations):
-        IdentityManager.verify_credential(vc, secret)
-    elapsed = time.perf_counter() - start
-
-    rate = iterations / elapsed
-    latency_us = (elapsed / iterations) * 1_000_000
-    print(f"Verifiable Credential Verification: {rate:,.0f} ops/sec ({latency_us:.2f} µs/op)")
+    for _ in range(n_iterations):
+        res = staking.verify_dual_quorum(signers)
+        assert res.approved is True
+    duration = time.perf_counter() - start
+    ops_per_sec = n_iterations / duration
+    print(f"Dual-Quorum 100-Node Consensus: {n_iterations} iterations in {duration:.4f}s ({ops_per_sec:,.1f} ops/sec)")
 
 
-def benchmark_slashing_waterfall():
-    staking = StakingManager()
-    waterfall = SlashingWaterfallEngine(staking)
-    staking.register_operator("op-victim", "did:v", "0xv", 100_000.0, 100.0)
-
-    iterations = 10_000
-    start = time.perf_counter()
-    for _ in range(iterations):
-        # Replenish and slash
-        staking.get_operator("op-victim").native_stake = 100_000.0
-        staking.get_operator("op-victim").restaked_eth = 100.0
-        waterfall.execute_slashing("op-victim", DisputeType.UNAUTHORIZED_TOOL_EXECUTION, escrow_usd=500.0)
-    elapsed = time.perf_counter() - start
-
-    rate = iterations / elapsed
-    latency_us = (elapsed / iterations) * 1_000_000
-    print(f"Slashing Waterfall Execution: {rate:,.0f} ops/sec ({latency_us:.2f} µs/op)")
+def main() -> None:
+    print("=== Agent Restaking AVS Protocol Performance Benchmarks ===\n")
+    benchmark_credential_issuance_and_verification(1000)
+    benchmark_dual_quorum_verification(1000)
+    print("\nBenchmark Suite Completed Successfully.")
 
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("Agent Restaking AVS Protocol Performance Benchmarks")
-    print("=" * 60)
-    benchmark_consensus_verification()
-    benchmark_credential_verification()
-    benchmark_slashing_waterfall()
-    print("=" * 60)
+    main()

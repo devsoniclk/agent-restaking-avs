@@ -8,9 +8,10 @@
 
 ## Reporting a Vulnerability
 
-Security is paramount for autonomous agent swarms. If you discover a security vulnerability in `agent-restaking-avs`, please report it responsibly:
+If you discover a security vulnerability within `agent-restaking-avs`, please report it privately. Do not open public GitHub issues for security vulnerabilities.
 
-1. **Email:** dananjayarox01@gmail.com
-2. Include reproduction steps, sample token payloads, and CVSS impact assessment.
-3. Please do not open public issues for zero-day vulnerabilities.
-4. Security advisories are triaged within 24 hours.
+Contact:
+- Lakshitha Dananjaya: dananjayarox01@gmail.com
+- GitHub Security Advisories: https://github.com/devsoniclk/agent-restaking-avs/security/advisories/new
+
+We aim to respond to security reports within 24 hours.

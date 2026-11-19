@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-restaking-avs"
-version = "0.1.0"
+version = "0.1.1"
 description = "Autonomous AI agent Actively Validated Service (AVS) restaking, dual-quorum economic security (ETH/native tokens), cryptographic W3C DID identity attestation, cross-chain state relays, and deterministic SLA dispute arbitration with automated collateral slashing waterfalls."
 readme = "README.md"
 requires-python = ">=3.9"

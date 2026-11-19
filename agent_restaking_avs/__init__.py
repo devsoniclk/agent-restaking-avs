@@ -5,7 +5,7 @@ Autonomous agent economic security, dual-quorum consensus,
 identity attestation, cross-chain relays, and deterministic SLA arbitration.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "Lakshitha Dananjaya"
 
 from .models import (
